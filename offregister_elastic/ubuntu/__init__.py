@@ -1,15 +1,14 @@
-from fabric.contrib.files import append
-from fabric.operations import run, sudo
 from offregister_fab_utils.ubuntu.systemd import restart_systemd
+from patchwork.files import append
 
 
 def install0(**kwargs):
-    installed = lambda: run(
-        "dpkg-query --showformat='${Version}' --show elasticsearch", quiet=True
+    installed = lambda: c.run(
+        "dpkg-query --showformat='${Version}' --show elasticsearch", hide=True
     )
 
-    if sudo("dpkg -s elasticsearch", quiet=True, warn_only=True).failed:
-        sudo(
+    if c.sudo("dpkg -s elasticsearch", hide=True, warn=True).exited != 0:
+        c.sudo(
             "wget -O - http://packages.elasticsearch.org/GPG-KEY-elasticsearch | apt-key add -"
         )
 
@@ -22,10 +21,10 @@ def install0(**kwargs):
             ),
             use_sudo=True,
         )
-        sudo("apt update")
-        sudo("apt-get install -y elasticsearch={}".format(kwargs["VERSION"]))
+        c.sudo("apt update")
+        c.sudo("apt-get install -y elasticsearch={}".format(kwargs["VERSION"]))
         if kwargs.get("NO_UPGRADE"):
-            sudo("apt-mark hold elasticsearch")
+            c.sudo("apt-mark hold elasticsearch")
         restart_systemd("elasticsearch")
 
         return "elasticsearch {} installed".format(installed())
